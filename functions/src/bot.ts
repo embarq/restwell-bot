@@ -1,22 +1,23 @@
-const { Telegraf } = require('telegraf')
-const admin = require('firebase-admin')
-const functions = require('firebase-functions')
+import { Context, Telegraf } from 'telegraf'
+import { Update } from 'typegram'
+import * as admin from 'firebase-admin'
+import * as functions from 'firebase-functions'
 const rtdb = admin.database
 
 const DB_ENTRIES_REF = 'entries'
 
 admin.initializeApp()
 
-const removeInlineKeyboard = (bot, ctx) => {
+const removeInlineKeyboard = (bot: Telegraf, ctx: Context<Update>) => {
   return bot.telegram.editMessageReplyMarkup(
-    ctx.chat.id,
-    ctx.callbackQuery.message.message_id,
-    ctx.callbackQuery.inline_message_id,
+    ctx.chat!.id,
+    ctx.callbackQuery!.message!.message_id,
+    ctx.callbackQuery!.inline_message_id,
     { inline_keyboard: [] }
   )
 }
 
-module.exports = function initBot(token) {
+export default function initBot(token: string) {
   const bot = new Telegraf(token, {
     telegram: { webhookReply: true }
   })
@@ -26,7 +27,7 @@ module.exports = function initBot(token) {
     '15+'
   ]
   
-  const FeedbackRate = {
+  const FeedbackRate: Record<number, string> = {
     1: '😞',
     2: '🙁',
     3: '😐',
@@ -38,7 +39,7 @@ module.exports = function initBot(token) {
     ([rating, text]) => ({ text, callback_data: `track_feedack:${rating}` })
   )
 
-  bot.command('debug', async ctx => {
+  bot.command('debug', async (ctx): Promise<void> => {
     const webhookInfo = await bot.telegram.getWebhookInfo()
     try {
       const { version } = require('../package.json')
@@ -48,7 +49,7 @@ module.exports = function initBot(token) {
         `<pre><code class="language-json">${ JSON.stringify(payload, null, 2) }</code></pre>`,
         {
           disable_notification: true,
-          parse_mode: 'html',
+          parse_mode: 'HTML',
         }
       )
     } catch(error) {
@@ -80,7 +81,7 @@ module.exports = function initBot(token) {
 
       await removeInlineKeyboard(bot, ctx)
 
-      return bot.telegram.sendMessage(ctx.chat.id, 'How do you feel about it?', {
+      return bot.telegram.sendMessage(ctx.chat!.id, 'How do you feel about it?', {
         reply_markup: {
           inline_keyboard: [
             feedbackOptions.map(option => ({
@@ -98,7 +99,7 @@ module.exports = function initBot(token) {
       await removeInlineKeyboard(bot, ctx)
   
       return bot.telegram.sendMessage(
-        ctx.chat.id,
+        ctx.chat!.id,
         [
           'Please check if data is correct:',
           `You got ${hoursTracked} hours of sleep and it feels like ${FeedbackRate[Number(feedback)]}`
@@ -129,11 +130,11 @@ module.exports = function initBot(token) {
         feedback: Number(feedback),
         hours_tracked: Number(hours_tracked),
         message_id,
-        uid: ctx.from.id,
-        chat_id: ctx.chat.id
+        uid: ctx.from!.id,
+        chat_id: ctx.chat!.id
       })
       ctx.answerCbQuery('Info is saved. Have a good day/night!')
-      bot.telegram.sendMessage(ctx.chat.id, 'Everything is stored!', {
+      bot.telegram.sendMessage(ctx.chat!.id, 'Everything is stored!', {
         reply_markup: {
           inline_keyboard: [
             [
@@ -180,7 +181,7 @@ module.exports = function initBot(token) {
 
     if (callbackQueryData === 'show_stats_menu') {
       await removeInlineKeyboard(bot, ctx)
-      return bot.telegram.sendMessage(ctx.chat.id, 'Select period', {
+      return bot.telegram.sendMessage(ctx.chat!.id, 'Select period', {
         reply_markup: {
           inline_keyboard: [
             [
@@ -215,7 +216,7 @@ module.exports = function initBot(token) {
       return ctx.answerCbQuery('Feature is not yet available. Stay in tune!')
     }
   
-    ctx.answerCbQuery()
+    return ctx.answerCbQuery()
   })
 
   return bot
