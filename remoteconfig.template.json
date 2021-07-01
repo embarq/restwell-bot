@@ -1,0 +1,20 @@
+{
+  "telegram": {
+    "token": "",
+    "bot_hook_url": ""
+  },
+  "admin": {
+    "config": {
+      "client_id": "",
+      "auth_uri": "",
+      "project_id": "",
+      "type": "",
+      "private_key_id": "",
+      "auth_provider_x509_cert_url": "",
+      "private_key": "",
+      "client_x509_cert_url": "",
+      "client_email": "",
+      "token_uri": ""
+    }
+  }
+}
