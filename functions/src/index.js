@@ -24,11 +24,11 @@ module.exports = function initBot(token) {
   ]
   
   const FeedbackRate = {
-    5: '😊',
-    4: '🙂',
-    3: '😐',
-    2: '🙁',
     1: '😞',
+    2: '🙁',
+    3: '😐',
+    4: '🙂',
+    5: '😊',
   }
   
   const feedbackOptions = Object.entries(FeedbackRate).map(
