@@ -1,28 +1,34 @@
 const functions = require('firebase-functions')
 const admin = require('firebase-admin')
 
-// admin.initializeApp(functions.config().admin.config)
-
 const initBot = require('./src/index')
 
 const bot = initBot(functions.config().telegram.token)
 const botWebhookUrl = process.env.TEST_DOMAIN != null
-  ? `${TEST_DOMAIN}/restwell-bot/europe-west1/botHook`
+  ? `${process.env.TEST_DOMAIN}/restwell-bot/europe-west1/botHook`
   : functions.config().telegram.bot_hook_url
 
-bot.telegram.deleteWebhook({ drop_pending_updates: true })
-  .then(() => functions.logger.log('Delete webhook success'))
-  .then(() => {
-    functions.logger.log('Attempt to register bot\'s hook on', botWebhookUrl)
-    return bot.telegram.setWebhook(botWebhookUrl, { allowed_updates: true })
-  })
-  .then(() => functions.logger.log('TG bot has been sucessfully installed.'))
-  .then(() => bot.telegram.getWebhookInfo())
-  .then((res) => functions.logger.log('TG Webhook', JSON.stringify(res)))
-  .catch((error) => {
-    functions.logger.error(`TG bot hasn't been installed.`);
-    functions.logger.error(JSON.stringify(error))
-  });
+if (process.env.TEST_DOMAIN) {
+  functions.logger.log('Attempt to register bot\'s hook on', botWebhookUrl)
+  bot.telegram
+    .setWebhook(botWebhookUrl, { allowed_updates: true })
+    .then(() => functions.logger.log('TG bot has been sucessfully installed.'))
+} else {
+  // If it's deployment, remove all temp and previous hook registrations.
+  bot.telegram.deleteWebhook({ drop_pending_updates: true })
+    .then(() => functions.logger.log('Delete webhook success'))
+    .then(() => {
+      functions.logger.log('Attempt to register bot\'s hook on', botWebhookUrl)
+      return bot.telegram.setWebhook(botWebhookUrl, { allowed_updates: true })
+    })
+    .then(() => functions.logger.log('TG bot has been sucessfully installed.'))
+    .then(() => bot.telegram.getWebhookInfo())
+    .then((res) => functions.logger.log('TG Webhook', JSON.stringify(res)))
+    .catch((error) => {
+      functions.logger.error(`TG bot hasn't been installed.`);
+      functions.logger.error(JSON.stringify(error))
+    });
+}
 
 exports.botHook = functions.region('europe-west1').https.onRequest(async (req, res) => {
   try {
