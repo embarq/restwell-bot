@@ -1,6 +1,9 @@
 const { Telegraf } = require('telegraf')
 const admin = require('firebase-admin')
+const functions = require('firebase-functions')
 const rtdb = admin.database
+
+const DB_ENTRIES_REF = 'entries'
 
 admin.initializeApp()
 
@@ -34,6 +37,25 @@ module.exports = function initBot(token) {
   const feedbackOptions = Object.entries(FeedbackRate).map(
     ([rating, text]) => ({ text, callback_data: `track_feedack:${rating}` })
   )
+
+  bot.command('debug', async ctx => {
+    const webhookInfo = await bot.telegram.getWebhookInfo()
+    try {
+      const { version } = require('../package.json')
+      const payload = { version, webhookInfo }
+      await bot.telegram.sendMessage(
+        ctx.chat.id,
+        `<pre><code class="language-json">${ JSON.stringify(payload, null, 2) }</code></pre>`,
+        {
+          disable_notification: true,
+          parse_mode: 'html',
+        }
+      )
+    } catch(error) {
+      console.error(error);
+      ctx.answerCbQuery('An error occured 👀')
+    }
+  })
   
   bot.start(ctx => {
     const hoursKeyboard = predefinedHours.map(hr => ({ text: hr, callback_data: `track_hrs:${hr}:${ctx.message.message_id}` }))
@@ -103,7 +125,7 @@ module.exports = function initBot(token) {
     if (callbackQueryData.startsWith('save_tracking_flow')) {
       // TODO: add 2 buttons: "Add schedule" and "Add notes"
       const [_, feedback, hours_tracked, message_id] = callbackQueryData.split(':')
-      await rtdb().ref('entries').push({
+      const ref = await rtdb().ref(DB_ENTRIES_REF).push({
         feedback: Number(feedback),
         hours_tracked: Number(hours_tracked),
         message_id,
@@ -116,18 +138,35 @@ module.exports = function initBot(token) {
           inline_keyboard: [
             [
               {
+                text: '🗑 Delete last entry',
+                callback_data: `delete_entry:${ref.key}`
+              }
+            ],
+            [
+              {
                 text: '🗄 Show Your Log',
                 callback_data: 'show_log'
               },
               {
                 text: '📊 Show Stats',
                 callback_data: 'show_stats_menu'
-              }
+              },
             ]
           ]
         }
       })
       await removeInlineKeyboard(bot, ctx)
+      return
+    }
+
+    if (callbackQueryData.startsWith('delete_entry:')) {
+      const [_, refKey] = callbackQueryData.split(':')
+      try {
+        await rtdb().ref(`${DB_ENTRIES_REF}/${refKey}`).remove()
+        ctx.answerCbQuery('🗑 Sucessfully removed!');
+      } catch (error) {
+        functions.logger.error(JSON.stringify({ error }))
+      }
       return
     }
   
