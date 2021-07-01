@@ -37,7 +37,7 @@ module.exports = function initBot(token) {
   
   bot.start(ctx => {
     const hoursKeyboard = predefinedHours.map(hr => ({ text: hr, callback_data: `track_hrs:${hr}:${ctx.message.message_id}` }))
-    bot.telegram.sendMessage(ctx.chat.id, 'How much hours did you sleep today?', {
+    bot.telegram.sendMessage(ctx.chat.id, 'How much did you sleep today?', {
       reply_markup: {
         inline_keyboard: [
           hoursKeyboard.slice(0, (hoursKeyboard.length / 2)),
