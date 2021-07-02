@@ -3,6 +3,7 @@ import { Update } from 'telegraf/typings/core/types/typegram'
 
 export const DB_ENTRIES_REF = 'entries'
 
+
 export enum MetaCommand {
   AddEntryNotes = 'add_entry_notes',
   AddEntrySchedule = 'add_entry_schedule',
@@ -14,6 +15,17 @@ export enum MetaCommand {
   ShowStatsMenu = 'show_stats_menu',
   TrackFeedack = 'track_feedack',
   TrackHours = 'track_hrs',
+  InvokeStart = "invoke_start"
+}
+
+export interface Entry {
+  chat_id: number
+  feedback: number
+  hours_tracked: number
+  message_id: number
+  uid: number
+  created_at: number
+  date: number
 }
 
 export const FeedbackRate: Record<number, string> = {

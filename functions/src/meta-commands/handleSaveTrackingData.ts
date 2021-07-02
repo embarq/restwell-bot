@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { Telegraf, Context } from 'telegraf'
 import { Update, Message } from 'telegraf/typings/core/types/typegram'
-import { DB_ENTRIES_REF, MetaCommand } from '../common'
+import { DB_ENTRIES_REF, Entry, MetaCommand } from '../common'
 
 export async function handleSaveTrackingData(
   bot: Telegraf<Context<Update>>,
@@ -13,14 +13,21 @@ export async function handleSaveTrackingData(
   }
 ): Promise<Message.TextMessage> {
   const { feedback, hoursTracked, messageId } = callbackQueryData
-  const ref = await admin.database().ref(DB_ENTRIES_REF).push({
+  const payload: Entry = {
     feedback: feedback,
     hours_tracked: hoursTracked,
     message_id: messageId,
     uid: ctx.from!.id,
     chat_id: ctx.chat!.id,
-  })
+    date: ctx.callbackQuery!.message!.date,
+    created_at: ctx.callbackQuery!.message!.date,
+  }
+  const ref = await admin.database()
+    .ref(`${DB_ENTRIES_REF}/${ctx.from!.id}`)
+    .push(payload)
+
   ctx.answerCbQuery('Info is saved. Have a good day/night!')
+
   return bot.telegram.sendMessage(
     ctx.chat!.id,
     'New entry created. Good Job!',

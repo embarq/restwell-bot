@@ -15,12 +15,10 @@ export function handleTrackFeedback(
 
   return bot.telegram.sendMessage(
     ctx.chat!.id,
-    [
-      'Please check if the data is correct:',
-      `You got ${hoursTracked} hours of sleep and it feels like ${
-        FeedbackRate[Number(feedback)]
-      }`,
-    ].join('\n'),
+    `Please check if the data is correct:\n` +
+    `You got ${hoursTracked} hours of sleep and it feels like ${
+      FeedbackRate[Number(feedback)]
+    }`,
     {
       reply_markup: {
         inline_keyboard: [
