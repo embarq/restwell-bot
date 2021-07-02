@@ -11,6 +11,7 @@
     "format:w": "npm run format -- -w"
   },
   "main": "lib/index.js",
+  "version": "0.0.0",
   "dependencies": {
     "firebase-admin": "^9.8.0",
     "firebase-functions": "^3.14.1",
