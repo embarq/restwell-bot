@@ -1,6 +1,7 @@
 import { Context, Telegraf } from 'telegraf'
 import { CallbackQuery, Update } from 'typegram'
 import * as admin from 'firebase-admin'
+import * as functions from 'firebase-functions'
 import { MetaCommand, removeInlineKeyboard } from './common'
 import { handleStartCommand } from './commands/start'
 import { handleDebugCommand } from './commands/debug'
@@ -11,6 +12,7 @@ import { handleSaveTrackingData } from './meta-commands/handleSaveTrackingData'
 import { handleShowStatsMenu } from './meta-commands/handleShowStatsMenu'
 import { handleTrackFeedback } from './meta-commands/handleTrackFeedback'
 import { handleTrackHoursResponse } from './meta-commands/handleTrackHoursResponse'
+import { handleShowLog } from './meta-commands/showLog'
 
 admin.initializeApp()
 
@@ -20,6 +22,7 @@ export default function initBot(token: string): Telegraf {
   })
 
   bot.start(handleStartCommand(bot))
+  bot.command('log', ctx => handleShowLog(bot, ctx))
   bot.command('debug', handleDebugCommand(bot))
 
   bot.on('callback_query', handleMetaCommand(bot))
@@ -31,6 +34,15 @@ function handleMetaCommand(bot: Telegraf) {
   return async (ctx: Context<Update>): Promise<unknown> => {
     const { data } = ctx.callbackQuery as CallbackQuery & { data: string }
     const callbackQueryData: string = data
+
+    if (callbackQueryData === MetaCommand.InvokeStart) {
+      try {
+        return await handleStartCommand(bot)(ctx)
+      } catch (error) {
+        await ctx.answerCbQuery('An error occured.')
+        return functions.logger.error(error)
+      }
+    }
 
     if (callbackQueryData.startsWith(MetaCommand.TrackHours)) {
       const [_, hoursTracked, messageId] = callbackQueryData
@@ -45,11 +57,16 @@ function handleMetaCommand(bot: Telegraf) {
         .map(Number)
 
       await removeInlineKeyboard(bot, ctx)
-      return handleTrackFeedback(bot, ctx, {
-        hoursTracked,
-        feedback,
-        messageId,
-      })
+      try {
+        return await handleTrackFeedback(bot, ctx, {
+          hoursTracked,
+          feedback,
+          messageId,
+        })
+      } catch (error) {
+        await ctx.answerCbQuery('An error occured.')
+        return functions.logger.error(error)
+      }
     }
 
     if (callbackQueryData.startsWith(MetaCommand.SaveTrackingFlow)) {
@@ -58,11 +75,17 @@ function handleMetaCommand(bot: Telegraf) {
         .map(Number)
 
       await removeInlineKeyboard(bot, ctx)
-      return handleSaveTrackingData(bot, ctx, {
-        hoursTracked,
-        feedback,
-        messageId,
-      })
+
+      try {
+        return await handleSaveTrackingData(bot, ctx, {
+          hoursTracked,
+          feedback,
+          messageId,
+        })
+      } catch (error) {
+        await ctx.answerCbQuery('An error occured.')
+        return functions.logger.error(error);
+      }
     }
 
     if (callbackQueryData.startsWith(MetaCommand.AddEntryNotes)) {
@@ -89,7 +112,12 @@ function handleMetaCommand(bot: Telegraf) {
     }
 
     if (callbackQueryData === MetaCommand.ShowLog) {
-      return ctx.answerCbQuery('Feature is not yet available. Stay in tune!')
+      try {
+        return await handleShowLog(bot, ctx)
+      } catch (error) {
+        await ctx.answerCbQuery('An error occured.')
+        return functions.logger.error(error)
+      }
     }
 
     if (callbackQueryData === MetaCommand.ShowStatsMenu) {
